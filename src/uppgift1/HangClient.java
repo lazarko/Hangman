@@ -16,8 +16,9 @@ import java.util.Scanner;
  * @author Lazarko
  */
 public class HangClient {
-    private static int port = 9393;
-    private static String server = "localhost";
+    private final static String QUIT_MSG = "You have disconnected from server";
+    private final static int port = 9393;
+    private final static String server = "localhost";
     
     public static void main(String[] args) {
         Socket client;
@@ -34,7 +35,9 @@ public class HangClient {
             output.println(write);
             output.flush();
             String inputString = fromServer.readLine();
-           
+            if(inputString.startsWith(QUIT_MSG) == true){
+                client.close();
+            }
             System.out.println(inputString);
                
             }  

@@ -30,7 +30,9 @@ public class Handler implements Runnable{
     boolean findWord;
     char[] word;
     private String comment; 
-    private final String COMMENT_WRONG = "Wrong!";
+    private final String COMMENT_DISCONNECT = "You have disconnected from server";
+    private final String CLIENT_DISCONNECT = "Client has disconnected";
+    private final String WELCOME_MSG = "Guess the word, to quit type: QUIT";
     private final String COMMENT_DONE = "Done, next word";
     private final String COMMENT_CORRECT = "Correct, guess again";
     Hangman hangman = new Hangman();
@@ -53,6 +55,8 @@ public class Handler implements Runnable{
         
         try{
            if(findWord == true){
+           toClient.println(WELCOME_MSG);
+           toClient.flush();    
            word = hangman.findWord();
            char[] hidden = hangman.hideWord(word);
            hiddenUpdate = hidden;
@@ -70,8 +74,11 @@ public class Handler implements Runnable{
                      
            char[] inChar = input.toCharArray();
            char[] check = hangman.hangman(word, hiddenUpdate, inChar);
-         
-           if(Arrays.equals(check, hiddenUpdate)  == true){
+           if(input.startsWith("QUIT") == true){
+               toClient.println(COMMENT_DISCONNECT);
+               toClient.flush();
+               disconnect();
+           }else if(Arrays.equals(check, hiddenUpdate)  == true){
                toClient.println(hiddenString + "WRONG");
                toClient.flush();
                System.out.println("Wrong");
@@ -94,14 +101,14 @@ public class Handler implements Runnable{
                hiddenUpdate = check; 
                findWord = false;
                this.run();
-           } 
+           }
         
          
         }catch(IOException ioe){
             System.out.print("ioe");
             
         }catch(NullPointerException e){
-            System.out.println("Client has disconnected");
+            System.out.println(CLIENT_DISCONNECT);
         }finally{
             try {
                 client.close();
@@ -109,7 +116,16 @@ public class Handler implements Runnable{
                 Logger.getLogger(Handler.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
-    }        
+    }
+    private void disconnect(){
+        try{
+            client.close();
+        }catch(IOException ioe){
+            System.out.print(ioe);
+        }
+        System.out.println(CLIENT_DISCONNECT);
+        isConnected = false;
+    }
 }
     
     
