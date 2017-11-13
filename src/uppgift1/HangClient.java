@@ -25,7 +25,7 @@ public class HangClient {
             Scanner input = new Scanner(System.in);
             
             client = new Socket(server, port);
-            while (client.isConnected()){ //HÄÄRÄ ASDAS
+            while (client.isConnected()){ 
             PrintWriter output = new PrintWriter(client.getOutputStream());
             BufferedReader fromServer = new BufferedReader(new InputStreamReader(client.getInputStream()));
             String in = fromServer.readLine();
