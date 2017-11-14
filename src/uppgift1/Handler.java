@@ -1,42 +1,37 @@
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.*;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Random;
-import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-
-
-
 /**
  *
  * @author Lazarko
  */
 public class Handler implements Runnable{
-    private boolean isConnected;
-    //private HangServer server;
     private Socket client;
     private BufferedReader fromClient;
     private PrintWriter toClient;
     char[] hiddenUpdate;
     boolean findWord;
+    boolean first;
     char[] word;
-    private String comment; 
-    
+    private final String COMMENT_DISCONNECT = "You have disconnected from server";
+    private final String CLIENT_DISCONNECT = "Client has disconnected";
+    private final String QUIT_MSG = "QUIT";
+    private final String Wrong_MSG = "Hangman: Wrong!";
+    private final String WELCOME_MSG = "Hangman: Welcome! Guess the word. To quit type QUIT";
+    private final String CORRECT_MSG = "Hangman: Correct, guess again";
+    private final String DONE_MSG = "Hangman: Done, next word";
+    Hangman hangman = new Hangman();
     
     public Handler(Socket client){
         this.client = client; 
         findWord = true;
-        isConnected = true;
-      
+        first = true;
     }
     @Override
     public void run() {
@@ -45,60 +40,62 @@ public class Handler implements Runnable{
              fromClient = new BufferedReader(new InputStreamReader(client.getInputStream()));
              toClient = new PrintWriter(client.getOutputStream(), false);
         }catch(IOException ioe){
-            System.out.println("FAIL");
+            System.out.println(ioe);
         }
         
         try{
-           if(findWord == true){
-           word = findWord();
-           char[] hidden = hideWord(word);
+           if(findWord == true){  
+           word = hangman.findWord();
+           char[] hidden = hangman.hideWord(word);
            hiddenUpdate = hidden;
-           comment = "";
            }
+           
+           firstMSG(first);
+           first = false;
         
            String hiddenString = Arrays.toString(hiddenUpdate)
                    .replace(',', ' ')
                    .replace('[', ' ')
                    .replace(']', ' ');
-           toClient.println(hiddenString + comment);
+           toClient.println(hiddenString); 
            toClient.flush();
            System.out.println(Arrays.toString(word));// FÖR SERVERN
            String input = fromClient.readLine();
                      
            char[] inChar = input.toCharArray();
-           char[] check = hangman(word, hiddenUpdate, inChar);
-         
-           if(Arrays.equals(check, hiddenUpdate)  == true){
-               toClient.println(hiddenString + "WRONG");
+           char[] check = hangman.hangman(word, hiddenUpdate, inChar);
+           if(input.startsWith(QUIT_MSG) == true){
+               toClient.println(COMMENT_DISCONNECT);
                toClient.flush();
-               System.out.println("Wrong");
-               comment = "WRONG!";
+               disconnect();
+           }else if(Arrays.equals(check, hiddenUpdate)  == true){
+               toClient.println(hiddenString + Wrong_MSG);
+               toClient.flush();
+               System.out.println(Wrong_MSG);
                findWord = false;
                this.run();
            } else if(Arrays.equals(check, word) == true){
-               String wordString = Arrays.toString(word);
-               comment = "Done";
-               toClient.println(wordString + " CORRECT");
+               hiddenString = Arrays.toString(word);
+               toClient.println(hiddenString + DONE_MSG);
                toClient.flush();
-               System.out.println("Correct");
+               System.out.println(DONE_MSG);
                findWord = true;
                this.run();
            } else if(Arrays.equals(check, hiddenUpdate) == false){
                String checkString = Arrays.toString(check);
-               comment = "Correct, guess again!"; 
-               toClient.println(checkString);
+               toClient.println(checkString + CORRECT_MSG);
                toClient.flush();
                hiddenUpdate = check; 
                findWord = false;
                this.run();
-           } 
+           }
         
          
         }catch(IOException ioe){
-            System.out.print("ioe");
+            System.out.print(ioe);
             
         }catch(NullPointerException e){
-            System.out.println("Client has disconnected");
+            System.out.println(CLIENT_DISCONNECT);
         }finally{
             try {
                 client.close();
@@ -107,72 +104,22 @@ public class Handler implements Runnable{
             }
         }
     }
-
-  
-     private char[] hideWord(char[] word){
-        int length = word.length;
-           Character c = '_';
-           char[] hiddenWord = new char[length];
-           for(int i = 0; i < length; i++){
-               hiddenWord[i] = c.charValue();
-           }
-           return hiddenWord;
-       }
-   
-    
-       private char[] findWord()throws FileNotFoundException{
-           char[] NewWord = findRandomWord();
-           return NewWord;
-       }
-    
-    
-       //OBS tänk senare på stora bokstäver vs små 
-       private char[] hangman(char[] word, char[] hidden, char[] guess){
-           if(guess.length == 1){
-             char[] newHidden = new char[hidden.length];  
-             char c = guess[0];
-             for(int i = 0; i < hidden.length; i++){
-                 if(word[i] == c){
-                     newHidden[i] = c;
-                 }else {
-                     newHidden[i] = hidden[i];
-                 }
-             }
-             return newHidden;
-           }else if(Arrays.equals(guess, word) == true){
-               return word;
-           }else{
-               return hidden; // Komihåg om den returnerar hidden så ska ett ppoäng avdras
-           }
-       }
-        
-        // Den här metodet returnerar ett ord från "words.txt" filen 
-        // mha readFromFile() metoden, och därmed returnerar en char[]
-        private char[] findRandomWord() throws FileNotFoundException{
-            ArrayList<String> listWords = readFromFile();
-            int NO_WORDS = listWords.size();
-            Random rand = new Random();
-            int randIndex = rand.nextInt(NO_WORDS) + 1;
-            String s = listWords.get(randIndex);
-            char[] word = s.toCharArray();
-            return word;
+    private void disconnect(){
+        try{
+            client.close();
+        }catch(IOException ioe){
+            System.out.print(ioe);
         }
-        // Läser av innehållet från "words.txt" och sparar varje ord i en 
-        // ArrayList<String> och returnerar det
-        private ArrayList<String> readFromFile() throws FileNotFoundException{
-            ArrayList<String> words;
-            Scanner sc = new Scanner(new File("words.txt"));
-            words = new ArrayList<String>();
-            while(sc.hasNextLine()){
-                String word = sc.nextLine();
-                words.add(word);
-            }
-            return words;
-        }
-
-   
-        
+        System.out.println(CLIENT_DISCONNECT);
     }
+    
+    private void firstMSG(boolean first){
+        if(first == true){
+            toClient.println(WELCOME_MSG);
+            toClient.flush();
+        }
+    }
+}
     
     
     
