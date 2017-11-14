@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -27,10 +22,11 @@ public class HangClient {
             
             client = new Socket(server, port);
             while (client.isConnected()){ 
+                
             PrintWriter output = new PrintWriter(client.getOutputStream());
             BufferedReader fromServer = new BufferedReader(new InputStreamReader(client.getInputStream()));
             String in = fromServer.readLine();
-            System.out.println("Hangman: " + in);
+            System.out.println(in);
             String write = input.nextLine();
             output.println(write);
             output.flush();

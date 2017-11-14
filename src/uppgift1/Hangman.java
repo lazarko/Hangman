@@ -45,7 +45,7 @@ public class Hangman {
            }else if(Arrays.equals(guess, word) == true){
                return word;
            }else{
-               return hidden; // Komihåg om den returnerar hidden så ska ett ppoäng avdras
+               return hidden;
            }
        }
         
