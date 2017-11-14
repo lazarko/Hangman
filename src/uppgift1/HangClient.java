@@ -41,6 +41,8 @@ public class HangClient {
 
         } catch (IOException ioe) {
             System.out.print(ioe);
+        }catch(NullPointerException e){
+            System.out.print(e);
         }
 
     } 
