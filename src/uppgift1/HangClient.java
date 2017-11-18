@@ -33,6 +33,7 @@ public class HangClient {
             String inputString = fromServer.readLine();
             if(inputString.startsWith(QUIT_MSG) == true){
                 client.close();
+                
             }
             System.out.println(inputString);
                
