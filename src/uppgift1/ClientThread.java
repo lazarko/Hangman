@@ -8,55 +8,64 @@ import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+
 /**
  *
  * @author Lazarko
  */
-public class ClientThread implements Runnable{
-    
+public class ClientThread implements Runnable {
+
     private final static String QUIT_MSG = "You have disconnected from server";
     PrintWriter output;
     BufferedReader fromServer;
     String in;
-    String write;
     String inputString;
     private boolean isConnected;
     private Socket socket;
-    
-    public ClientThread(Socket socket){
+    public String msg;
+
+    public ClientThread(Socket socket) {
         this.socket = socket;
         isConnected = true;
+
     }
 
     @Override
     public void run() {
-        Scanner sc = new Scanner (System.in);
-        try{
-            
-            while(isConnected){
-               output = new PrintWriter(socket.getOutputStream());
-               fromServer = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-               in = fromServer.readLine();
-               System.out.println(in);
-               write = sc.nextLine();
-               output.println(write);
-               output.flush();
-               
-               inputString = fromServer.readLine();
-               if(inputString.equalsIgnoreCase("Quit")){
-                   disconnect();
-               }
-               System.out.println(inputString);     
+        try {
+            output = new PrintWriter(socket.getOutputStream());
+            fromServer = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            new Thread(() -> {
+                Scanner sc = new Scanner(System.in);
+                while (true) {
+                    msg = sc.nextLine();
+                    output.println(msg);
+                    output.flush();
+                }
+            }).start();
+            while (isConnected) {
+                in = fromServer.readLine();
+                printText(in);
+                inputString = fromServer.readLine();
+                if (inputString.equalsIgnoreCase("Quit")) {
+                    disconnect();
+                }
+                printText(inputString);
             }
-            
-        } catch (IOException ex) {
+
+        } catch (IOException | NullPointerException ex) {
             Logger.getLogger(ClientThread.class.getName()).log(Level.SEVERE, null, ex);
-        }   
+        }
     }
-    private void disconnect() throws IOException{
-            socket.close();
-            System.out.println(QUIT_MSG);
+
+    private void disconnect() throws IOException {
+        socket.close();
+        printText(QUIT_MSG);
     }
-  
-    
+
+    private void printText(String messageFromServer) {
+        new Thread(() -> {
+            System.out.println(messageFromServer);
+        }).start();
+    }
 }
